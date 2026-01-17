@@ -1,0 +1,5 @@
+# Authentication helper dependencies
+# Install with: pip install -r requirements-auth.txt
+
+msal>=1.20.0
+python-dotenv>=1.0.0

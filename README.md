@@ -91,6 +91,13 @@ pip install onedrive-skill
 
 **Package is now available on PyPI:** https://pypi.org/project/onedrive-skill/
 
+**With authentication helper dependencies:**
+```bash
+pip install onedrive-skill[auth]
+```
+
+This installs additional packages (msal, python-dotenv) needed for the authentication helper script.
+
 ### Method 3: Install with development dependencies
 
 For contributing or running tests:
@@ -146,71 +153,296 @@ docker run -e ONEDRIVE_ACCESS_TOKEN="your_token" onedrive-skill
 
 For detailed requirements and dependencies, see [REQUIREMENTS.md](REQUIREMENTS.md).
 
+## Using with Claude (Claude.ai or Claude Code CLI)
+
+This skill can be integrated with Claude for AI-powered OneDrive management. Here's how to set it up:
+
+### Step 1: Install the Package
+
+```bash
+pip install onedrive-skill
+```
+
+### Step 2: Get Your OneDrive Access Token
+
+Follow the [Authentication Setup](#authentication-setup) section below to obtain your access token.
+
+**Quick Summary for Personal OneDrive:**
+1. Register an app in Azure Portal (takes 5 minutes)
+2. Configure permissions: `Files.ReadWrite` and `User.Read`
+3. Generate an access token using the [authentication helper script](#quick-authentication-with-helper-script)
+4. Set the token as an environment variable
+
+### Step 3: Set Environment Variable
+
+Set your access token before running Claude:
+
+```bash
+# On Linux/Mac:
+export ONEDRIVE_ACCESS_TOKEN="your_access_token_here"
+
+# On Windows (PowerShell):
+$env:ONEDRIVE_ACCESS_TOKEN="your_access_token_here"
+
+# On Windows (Command Prompt):
+set ONEDRIVE_ACCESS_TOKEN=your_access_token_here
+```
+
+### Step 4: Use with Claude
+
+Once installed and configured, you can use this skill with Claude:
+
+**Example prompts to use with Claude:**
+- "List all files in my OneDrive root folder"
+- "Search for all PDF files containing 'invoice' in my OneDrive"
+- "Upload this document to my OneDrive Documents folder"
+- "Create a new folder called 'Project Reports' in OneDrive"
+- "Show me all files in my OneDrive Photos folder"
+
+**In Python code with Claude:**
+```python
+from onedrive_skill import OneDriveSkill
+
+# Initialize the skill (reads ONEDRIVE_ACCESS_TOKEN from environment)
+skill = OneDriveSkill()
+
+# Claude can now use these methods:
+files = skill.list_files()  # List files in root
+results = skill.search("budget")  # Search for files
+```
+
+### Step 5: Security Notes for Claude Usage
+
+⚠️ **Important Security Considerations:**
+- Access tokens typically expire after 1 hour
+- For continuous use, implement token refresh (see [Token Refresh](#token-refresh) below)
+- Never share or commit your access tokens
+- Use environment variables or secure secret management
+- Consider setting up a dedicated Azure AD app for Claude usage
+
 ## Authentication Setup
 
-This skill uses the Microsoft Graph API to connect to OneDrive. You need to obtain an access token:
+This skill uses the Microsoft Graph API to connect to OneDrive. You need to obtain an access token from Azure AD. Follow these steps carefully:
 
 ### Step 1: Register an Application in Azure AD
 
-1. Go to [Azure Portal](https://portal.azure.com/)
-2. Navigate to **Azure Active Directory** > **App registrations**
-3. Click **New registration**
-4. Name your application (e.g., "OneDrive Skill")
-5. Select appropriate account type (Personal Microsoft accounts for personal OneDrive)
-6. Click **Register**
+**For Personal Microsoft/OneDrive Accounts:**
+
+1. **Go to Azure Portal**
+   - Visit [Azure Portal](https://portal.azure.com/)
+   - Sign in with your Microsoft account (the one that has OneDrive)
+
+2. **Navigate to App Registrations**
+   - Search for "Azure Active Directory" in the search bar
+   - Click on **Azure Active Directory** (or **Microsoft Entra ID**)
+   - In the left menu, click **App registrations**
+
+3. **Create New Registration**
+   - Click **+ New registration** at the top
+   - Fill in the details:
+     - **Name**: `OneDrive Skill for Claude` (or any name you prefer)
+     - **Supported account types**: Select **"Accounts in any organizational directory and personal Microsoft accounts"**
+     - **Redirect URI**: Select **"Public client/native (mobile & desktop)"** and enter: `http://localhost`
+   - Click **Register**
+
+4. **Save Your Application (client) ID**
+   - After registration, you'll see the **Overview** page
+   - Copy the **Application (client) ID** - you'll need this later
+   - Example: `12345678-1234-1234-1234-123456789abc`
 
 ### Step 2: Configure API Permissions
 
-1. In your app registration, go to **API permissions**
-2. Click **Add a permission** > **Microsoft Graph** > **Delegated permissions**
-3. Add the following permissions:
-   - `Files.ReadWrite` (or `Files.ReadWrite.All` for broader access)
-   - `User.Read`
-4. Click **Add permissions**
-5. Click **Grant admin consent** if applicable
+1. **Add Permissions**
+   - In your app registration, click **API permissions** in the left menu
+   - Click **+ Add a permission**
+   - Select **Microsoft Graph**
+   - Select **Delegated permissions**
+
+2. **Select Required Permissions**
+   - Search for and select:
+     - ✅ `Files.ReadWrite` - Read and write access to your files
+     - ✅ `Files.ReadWrite.All` - (Optional) Access to all files you can access
+     - ✅ `User.Read` - Sign in and read user profile
+   - Click **Add permissions**
+
+3. **Grant Consent** (Important!)
+   - Click **Grant admin consent for [Your Directory]** button
+   - If you don't see this button, that's OK - you'll consent during authentication
+   - Click **Yes** to confirm
 
 ### Step 3: Generate Access Token
 
-You can generate an access token using various OAuth2 flows. For testing purposes, you can use:
+Now you need to get an access token. There are two methods:
 
-- **Azure AD OAuth2 authorization code flow**
-- **Device code flow**
-- **MSAL (Microsoft Authentication Library)**
+#### Method A: Quick Authentication with Helper Script (Recommended)
 
-Example using MSAL (Python):
+Use the included authentication helper script:
+
+1. **Install MSAL library**:
+   ```bash
+   pip install msal
+   ```
+
+2. **Run the authentication helper**:
+   ```bash
+   python auth_helper.py
+   ```
+
+   The script is included in this repository and will:
+   - Guide you through the authentication process
+   - Open a browser for you to sign in
+   - Display your access token and refresh token
+   - Optionally save tokens to a `.env` file
+
+3. **Follow the prompts**:
+   - Enter your Application (client) ID when asked
+   - A browser window will open for you to sign in
+   - Sign in with your Microsoft account
+   - Grant the requested permissions
+   - Choose whether to save the tokens to `.env` file
+
+**Example output:**
+```
+✅ Authentication successful!
+📋 Your Tokens:
+Access Token: eyJ0eXAiOiJKV1QiLCJhbGc...
+⏰ Access token expires in: 60 minutes
+
+Save tokens to .env file? (y/n): y
+✅ Tokens saved to /path/to/.env
+```
+
+#### Method B: Manual MSAL Authentication
+
+Create a Python script with this code:
 
 ```python
 from msal import PublicClientApplication
+import json
 
+# Your Application (client) ID from Step 1
+CLIENT_ID = "YOUR_CLIENT_ID_HERE"
+
+# Create the MSAL application
 app = PublicClientApplication(
-    client_id="YOUR_CLIENT_ID",
+    client_id=CLIENT_ID,
     authority="https://login.microsoftonline.com/common"
 )
 
-# Interactive authentication
-result = app.acquire_token_interactive(
-    scopes=["Files.ReadWrite", "User.Read"]
-)
+# Required scopes (permissions)
+scopes = ["Files.ReadWrite", "User.Read", "offline_access"]
+
+# Interactive authentication - will open a browser
+print("Opening browser for authentication...")
+result = app.acquire_token_interactive(scopes=scopes)
 
 if "access_token" in result:
-    access_token = result["access_token"]
-    print(f"Access token: {access_token}")
+    print("\n✅ Authentication successful!")
+    print(f"\n📋 Access Token:\n{result['access_token']}\n")
+
+    if "refresh_token" in result:
+        print(f"🔄 Refresh Token:\n{result['refresh_token']}\n")
+
+    # Save to file for convenience
+    with open(".env", "w") as f:
+        f.write(f"ONEDRIVE_ACCESS_TOKEN={result['access_token']}\n")
+        if "refresh_token" in result:
+            f.write(f"ONEDRIVE_REFRESH_TOKEN={result['refresh_token']}\n")
+
+    print("✅ Tokens saved to .env file")
+    print("\nℹ️ Access tokens expire after 1 hour.")
+    print("ℹ️ Use the refresh token to get a new access token without re-authenticating.")
+else:
+    print("\n❌ Authentication failed!")
+    print(f"Error: {result.get('error')}")
+    print(f"Description: {result.get('error_description')}")
+```
+
+**Run the script:**
+```bash
+python your_auth_script.py
 ```
 
 ### Step 4: Set Environment Variable
 
+After obtaining your access token, set it as an environment variable:
+
+**On Linux/Mac:**
 ```bash
 export ONEDRIVE_ACCESS_TOKEN="your_access_token_here"
+
+# To make it permanent, add to ~/.bashrc or ~/.zshrc:
+echo 'export ONEDRIVE_ACCESS_TOKEN="your_access_token_here"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-Or create a `.env` file (see `.env.example`):
+**On Windows (PowerShell):**
+```powershell
+$env:ONEDRIVE_ACCESS_TOKEN="your_access_token_here"
+
+# To make it permanent (user level):
+[System.Environment]::SetEnvironmentVariable('ONEDRIVE_ACCESS_TOKEN', 'your_access_token_here', 'User')
+```
+
+**On Windows (Command Prompt):**
+```cmd
+set ONEDRIVE_ACCESS_TOKEN=your_access_token_here
+
+# To make it permanent:
+setx ONEDRIVE_ACCESS_TOKEN "your_access_token_here"
+```
+
+**Or use a `.env` file** (recommended for development):
 
 ```bash
-cp .env.example .env
-# Edit .env and add your access token
+# Create .env file
+echo "ONEDRIVE_ACCESS_TOKEN=your_access_token_here" > .env
+
+# The Python library can load this automatically
+pip install python-dotenv
 ```
 
-**⚠️ Security Note:** Never commit your `.env` file or access tokens to version control!
+Then in your Python code:
+```python
+from dotenv import load_dotenv
+load_dotenv()  # Loads .env file
+
+from onedrive_skill import OneDriveSkill
+skill = OneDriveSkill()  # Automatically uses token from environment
+```
+
+### Token Refresh
+
+Access tokens expire after **1 hour**. To avoid re-authenticating every hour, use refresh tokens:
+
+```python
+from msal import PublicClientApplication
+
+CLIENT_ID = "your_client_id"
+app = PublicClientApplication(client_id=CLIENT_ID, authority="https://login.microsoftonline.com/common")
+
+# Use refresh token to get new access token
+refresh_token = "your_refresh_token"
+scopes = ["Files.ReadWrite", "User.Read"]
+
+result = app.acquire_token_by_refresh_token(
+    refresh_token=refresh_token,
+    scopes=scopes
+)
+
+if "access_token" in result:
+    new_access_token = result["access_token"]
+    # Update your environment variable with the new token
+    import os
+    os.environ["ONEDRIVE_ACCESS_TOKEN"] = new_access_token
+```
+
+**⚠️ Security Notes:**
+- Never commit your `.env` file or access tokens to version control!
+- Add `.env` to your `.gitignore` file
+- Store refresh tokens securely - they don't expire quickly
+- Rotate tokens regularly for security
+- Consider using a secret management service in production
 
 ## Usage
 
