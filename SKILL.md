@@ -2,12 +2,34 @@
 
 ## Skill Information
 
-**Name**: onedrive-connect  
-**Version**: 0.1.0  
-**Author**: lucapaone76  
-**License**: MIT  
-**Category**: File Management, Cloud Storage  
+**Name**: onedrive-connect
+**Version**: 0.1.1
+**Author**: lucapaone76
+**License**: MIT
+**Category**: File Management, Cloud Storage
 **Tags**: onedrive, microsoft, graph-api, cloud, storage, files
+
+## Quick Reference
+
+📦 **PyPI Package**: https://pypi.org/project/onedrive-skill/
+
+**Installation**:
+```bash
+pip install onedrive-skill[auth]  # Includes authentication tools
+```
+
+**Quick Setup**:
+```bash
+python auth_helper.py  # Get your access token
+export ONEDRIVE_ACCESS_TOKEN="your_token"
+```
+
+**Usage**:
+```python
+from onedrive_skill import OneDriveSkill
+skill = OneDriveSkill()
+print(skill.list_files())
+```
 
 ## Description
 
@@ -31,25 +53,214 @@ This skill provides the following capabilities:
 
 ## Authentication
 
-**Type**: OAuth2 Bearer Token  
-**Provider**: Microsoft Graph API  
+This skill uses OAuth2 authentication via Microsoft Graph API to access personal OneDrive accounts.
+
+### Authentication Overview
+
+**Type**: OAuth2 Bearer Token
+**Provider**: Microsoft Graph API
 **Required Scopes**:
-- `Files.ReadWrite` or `Files.ReadWrite.All`
-- `User.Read`
+- `Files.ReadWrite` or `Files.ReadWrite.All` - Read and write access to files
+- `User.Read` - Access to user profile information
+- `offline_access` - (Recommended) For refresh token support
 
 **Environment Variable**: `ONEDRIVE_ACCESS_TOKEN`
 
+### Quick Start Authentication
+
+**For Personal Microsoft/OneDrive Accounts:**
+
+1. **Install authentication dependencies**:
+   ```bash
+   pip install onedrive-skill[auth]
+   ```
+
+2. **Run the authentication helper**:
+   ```bash
+   python auth_helper.py
+   ```
+
+   This interactive script will:
+   - Guide you through Azure AD app registration
+   - Open a browser for Microsoft sign-in
+   - Generate access and refresh tokens
+   - Save tokens to `.env` file
+
+3. **Set the environment variable**:
+   ```bash
+   export ONEDRIVE_ACCESS_TOKEN="your_token_here"
+   ```
+
+### Detailed Authentication Setup
+
+#### Step 1: Register Azure AD Application
+
+1. Go to [Azure Portal](https://portal.azure.com/)
+2. Navigate to **Azure Active Directory** → **App registrations**
+3. Click **New registration**
+4. Configure:
+   - **Name**: `OneDrive Skill for Claude` (or your preferred name)
+   - **Supported account types**: Personal Microsoft accounts
+   - **Redirect URI**: `Public client/native (mobile & desktop)` → `http://localhost`
+5. Save the **Application (client) ID**
+
+#### Step 2: Configure Permissions
+
+1. In your app, go to **API permissions**
+2. Add **Microsoft Graph** → **Delegated permissions**:
+   - `Files.ReadWrite`
+   - `User.Read`
+   - `offline_access`
+3. Grant admin consent if prompted
+
+#### Step 3: Generate Tokens
+
+**Option A: Use the Auth Helper Script** (Recommended)
+
+The repository includes `auth_helper.py` for easy token generation:
+
+```bash
+python auth_helper.py
+```
+
+**Option B: Manual Token Generation**
+
+Use MSAL (Microsoft Authentication Library):
+
+```python
+from msal import PublicClientApplication
+
+app = PublicClientApplication(
+    client_id="YOUR_CLIENT_ID",
+    authority="https://login.microsoftonline.com/common"
+)
+
+result = app.acquire_token_interactive(
+    scopes=["Files.ReadWrite", "User.Read", "offline_access"]
+)
+
+if "access_token" in result:
+    access_token = result["access_token"]
+    refresh_token = result.get("refresh_token")
+```
+
+### Token Management
+
+**Access Token Expiration**: Access tokens expire after **1 hour**.
+
+**Using Refresh Tokens**: To avoid re-authenticating every hour, save and use refresh tokens:
+
+```python
+from msal import PublicClientApplication
+
+app = PublicClientApplication(client_id="YOUR_CLIENT_ID", authority="https://login.microsoftonline.com/common")
+
+result = app.acquire_token_by_refresh_token(
+    refresh_token="your_refresh_token",
+    scopes=["Files.ReadWrite", "User.Read"]
+)
+
+new_access_token = result["access_token"]
+```
+
+### Security Best Practices
+
+- ✅ Never hardcode tokens in source code
+- ✅ Use environment variables or `.env` files
+- ✅ Add `.env` to `.gitignore`
+- ✅ Rotate tokens regularly
+- ✅ Store refresh tokens securely
+- ✅ Use dedicated Azure AD app for production
+- ⚠️ Access tokens expire after 1 hour
+- ⚠️ Refresh tokens have longer lifespan but can be revoked
+
 ## Installation
 
+### From PyPI (Recommended)
+
 ```bash
-pip install -r requirements.txt
+# Basic installation
+pip install onedrive-skill
+
+# With authentication helper dependencies
+pip install onedrive-skill[auth]
+
+# With development dependencies
+pip install onedrive-skill[dev]
 ```
 
-Or for development:
+### From Source
 
 ```bash
+# Clone the repository
+git clone https://github.com/lucapaone76/onedrive-connect.git
+cd onedrive-connect
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Or install in development mode
 pip install -e .
 ```
+
+### PyPI Package
+
+**Package Name**: `onedrive-skill`
+**PyPI URL**: https://pypi.org/project/onedrive-skill/
+
+## Using with Claude and LLM Systems
+
+This skill is designed to work seamlessly with Claude (Claude.ai, Claude Code CLI) and other LLM systems.
+
+### Setup for Claude
+
+1. **Install the skill**:
+   ```bash
+   pip install onedrive-skill[auth]
+   ```
+
+2. **Authenticate and get token**:
+   ```bash
+   python auth_helper.py
+   ```
+
+3. **Set environment variable** before running Claude:
+   ```bash
+   export ONEDRIVE_ACCESS_TOKEN="your_token_here"
+   ```
+
+4. **Use with Claude**: The skill is now available for Claude to use!
+
+### Example Claude Prompts
+
+Once configured, you can use natural language prompts with Claude:
+
+- "List all files in my OneDrive root folder"
+- "Search for PDF files containing 'invoice' in my OneDrive"
+- "Upload this document to my OneDrive Documents folder"
+- "Create a new folder called 'Project Reports' in OneDrive"
+- "Show me all Excel files in my OneDrive"
+- "Find all files modified in the last week"
+
+### LLM Integration
+
+The skill provides metadata for LLM discovery and understanding:
+
+```python
+from onedrive_skill import OneDriveSkill
+
+skill = OneDriveSkill()
+
+# Get skill metadata for LLM
+metadata = skill.get_skill_metadata()
+# Returns: capabilities, safety levels, parameters, descriptions
+```
+
+This metadata helps LLMs understand:
+- What operations are available
+- Which operations require user confirmation
+- Safety levels of each operation
+- Expected parameters and return values
 
 ## Usage
 
@@ -229,24 +440,78 @@ The skill raises exceptions for common error scenarios:
 
 ## Configuration
 
-### Required Environment Variables
+### Environment Variables
+
+#### Required
 
 - `ONEDRIVE_ACCESS_TOKEN`: OAuth2 access token for Microsoft Graph API
+  - Obtain using `python auth_helper.py`
+  - Expires after 1 hour
+  - Must be refreshed periodically
 
-### Optional Environment Variables
+#### Optional
 
-- `ONEDRIVE_API_BASE_URL`: Custom API endpoint (default: `https://graph.microsoft.com/v1.0`)
+- `ONEDRIVE_REFRESH_TOKEN`: Refresh token for automatic access token renewal
+  - Obtained from `auth_helper.py` along with access token
+  - Lasts longer than access tokens
+  - Used to get new access tokens without re-authenticating
 
-### Configuration Example
+- `AZURE_CLIENT_ID`: Your Azure AD Application (client) ID
+  - Useful for automated token refresh
+  - From Azure Portal → App registrations → Your app → Overview
 
+- `ONEDRIVE_API_BASE_URL`: Custom API endpoint
+  - Default: `https://graph.microsoft.com/v1.0`
+  - Only change for special requirements
+
+### Configuration Methods
+
+#### Method 1: Environment Variables
+
+**Linux/Mac:**
 ```bash
 export ONEDRIVE_ACCESS_TOKEN="your_access_token_here"
+export ONEDRIVE_REFRESH_TOKEN="your_refresh_token_here"
 ```
 
-Or using a `.env` file with python-dotenv:
+**Windows (PowerShell):**
+```powershell
+$env:ONEDRIVE_ACCESS_TOKEN="your_access_token_here"
+$env:ONEDRIVE_REFRESH_TOKEN="your_refresh_token_here"
+```
 
-```bash
-ONEDRIVE_ACCESS_TOKEN=your_access_token_here
+#### Method 2: .env File (Recommended)
+
+1. Copy the template:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit `.env` and add your tokens:
+   ```bash
+   ONEDRIVE_ACCESS_TOKEN=your_access_token_here
+   ONEDRIVE_REFRESH_TOKEN=your_refresh_token_here
+   AZURE_CLIENT_ID=your_client_id_here
+   ```
+
+3. Load in Python:
+   ```python
+   from dotenv import load_dotenv
+   load_dotenv()
+
+   from onedrive_skill import OneDriveSkill
+   skill = OneDriveSkill()  # Automatically uses environment variables
+   ```
+
+4. **Important**: Add `.env` to `.gitignore`!
+
+#### Method 3: Direct Token Passing
+
+```python
+from onedrive_skill import OneDriveSkill
+
+# Pass token directly (not recommended for production)
+skill = OneDriveSkill(access_token="your_access_token_here")
 ```
 
 ## Dependencies
@@ -257,8 +522,38 @@ ONEDRIVE_ACCESS_TOKEN=your_access_token_here
 
 ### Optional Dependencies
 
+#### Authentication Helpers (`pip install onedrive-skill[auth]`)
+
 - `msal>=1.20.0`: Microsoft Authentication Library for token generation
+  - Required for `auth_helper.py` script
+  - Used for OAuth2 authentication flow
+  - Handles token acquisition and refresh
 - `python-dotenv>=1.0.0`: Load environment variables from .env file
+  - Convenient for managing tokens
+  - Keeps secrets out of source code
+
+#### Development Tools (`pip install onedrive-skill[dev]`)
+
+- `pytest>=7.0.0`: Testing framework
+- `pytest-cov>=4.0.0`: Code coverage reporting
+- `black>=23.0.0`: Code formatter
+- `ruff>=0.1.0`: Fast Python linter
+
+### Installing Dependencies
+
+```bash
+# Core only
+pip install onedrive-skill
+
+# With authentication tools
+pip install onedrive-skill[auth]
+
+# With development tools
+pip install onedrive-skill[dev]
+
+# All extras
+pip install onedrive-skill[auth,dev]
+```
 
 ## Platform Support
 
@@ -311,13 +606,55 @@ Check that your application has the necessary API permissions in Azure AD and th
 
 ### Version 0.1.0 (2026-01-17)
 
-Initial release with:
-- OneDriveClient for low-level API access
-- OneDriveSkill for LLM-friendly operations
+**Initial Release - Published to PyPI**
+
+#### Core Features
+- `OneDriveClient`: Low-level API access to Microsoft Graph API
+- `OneDriveSkill`: LLM-friendly skill interface with safety features
 - User confirmation for destructive operations
 - Skill metadata for LLM discovery
-- Comprehensive documentation
+- Comprehensive type hints and documentation
 - Safety features and cancellation support
+
+#### Authentication
+- `auth_helper.py`: Interactive authentication script
+  - Guides users through Azure AD app setup
+  - Browser-based OAuth2 flow
+  - Automatic token generation and storage
+  - Support for access and refresh tokens
+- Multiple authentication methods supported
+- Token refresh capability for long-running applications
+- Secure token management via environment variables
+
+#### Installation & Distribution
+- Published to PyPI: https://pypi.org/project/onedrive-skill/
+- Multiple installation options:
+  - Core: `pip install onedrive-skill`
+  - With auth tools: `pip install onedrive-skill[auth]`
+  - With dev tools: `pip install onedrive-skill[dev]`
+- Comprehensive documentation for personal OneDrive accounts
+
+#### LLM Integration
+- Claude integration guide
+- Example prompts for natural language usage
+- Metadata API for capability discovery
+- Safety level categorization (read-only, write, destructive)
+
+#### Documentation
+- Complete skill specification (SKILL.md)
+- Detailed README with step-by-step guides
+- Azure AD setup instructions for personal accounts
+- Requirements documentation (REQUIREMENTS.md)
+- Changelog (CHANGELOG.md)
+- .env.example template
+- Skill manifest JSON for machine-readable metadata
+
+#### Developer Experience
+- Full type hints for IDE support
+- Comprehensive docstrings
+- Example usage scripts
+- Development dependencies included
+- Testing framework setup
 
 ## License
 
