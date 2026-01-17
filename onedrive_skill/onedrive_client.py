@@ -155,15 +155,16 @@ class OneDriveClient:
     def upload_file(
         self, 
         file_path: str, 
-        content: bytes, 
-        overwrite: bool = True
+        content: bytes
     ) -> Dict[str, Any]:
         """Upload a file to OneDrive.
+        
+        Note: This method will overwrite any existing file at the specified path.
+        This is the default behavior of the Microsoft Graph API PUT endpoint.
         
         Args:
             file_path: Path where to upload the file (e.g., "Documents/myfile.txt")
             content: File content as bytes
-            overwrite: Whether to overwrite existing file
         
         Returns:
             Dictionary containing information about the uploaded file
@@ -179,12 +180,21 @@ class OneDriveClient:
             data=content
         )
     
-    def create_folder(self, folder_name: str, parent_path: str = "") -> Dict[str, Any]:
+    def create_folder(
+        self, 
+        folder_name: str, 
+        parent_path: str = "",
+        conflict_behavior: str = "rename"
+    ) -> Dict[str, Any]:
         """Create a new folder in OneDrive.
         
         Args:
             folder_name: Name of the folder to create
             parent_path: Path to parent folder (empty for root)
+            conflict_behavior: How to handle naming conflicts. Options:
+                              - "rename": Automatically rename if folder exists (default)
+                              - "replace": Replace existing folder
+                              - "fail": Return error if folder exists
         
         Returns:
             Dictionary containing information about the created folder
@@ -199,7 +209,7 @@ class OneDriveClient:
         data = {
             "name": folder_name,
             "folder": {},
-            "@microsoft.graph.conflictBehavior": "rename"
+            "@microsoft.graph.conflictBehavior": conflict_behavior
         }
         
         return self._make_request("POST", endpoint, json=data)
