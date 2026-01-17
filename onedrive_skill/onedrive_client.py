@@ -1,6 +1,8 @@
 """OneDrive Client implementation using Microsoft Graph API."""
 
+import json
 import os
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Callable
 from urllib.parse import quote
 import requests
@@ -289,18 +291,16 @@ class OneDriveSkill:
             Dictionary containing skill metadata including available operations,
             parameters, safety levels, and descriptions.
         """
-        import json
-        import os
-        
-        # Try to load from skill_manifest.json
-        manifest_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), 
-            'skill_manifest.json'
-        )
-        
-        if os.path.exists(manifest_path):
-            with open(manifest_path, 'r') as f:
-                return json.load(f)
+        # Try to load from skill_manifest.json using pathlib
+        try:
+            manifest_path = Path(__file__).parent.parent / 'skill_manifest.json'
+            
+            if manifest_path.exists():
+                with open(manifest_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            # If file doesn't exist or can't be parsed, fall through to default
+            pass
         
         # Fallback to inline metadata
         return {
