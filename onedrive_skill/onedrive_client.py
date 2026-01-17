@@ -49,30 +49,41 @@ class OneDriveClient:
     def _make_request(
         self, 
         method: str, 
-        endpoint: str, 
+        endpoint: str,
+        return_json: bool = True,
+        custom_headers: Optional[Dict[str, str]] = None,
         **kwargs
-    ) -> Dict[str, Any]:
+    ) -> Any:
         """Make an HTTP request to the Microsoft Graph API.
         
         Args:
             method: HTTP method (GET, POST, PUT, DELETE, etc.)
             endpoint: API endpoint path
+            return_json: If True, parse and return JSON response. If False, return raw response
+            custom_headers: Optional custom headers to merge with default headers
             **kwargs: Additional arguments to pass to requests
         
         Returns:
-            JSON response from the API
+            JSON response from the API (if return_json=True) or requests.Response object
         
         Raises:
             requests.exceptions.HTTPError: If the request fails
         """
         url = f"{self.api_base_url}{endpoint}"
+        headers = self.headers.copy()
+        if custom_headers:
+            headers.update(custom_headers)
+        
         response = requests.request(
             method=method,
             url=url,
-            headers=self.headers,
+            headers=headers,
             **kwargs
         )
         response.raise_for_status()
+        
+        if not return_json:
+            return response
         
         # Some responses (like DELETE) may not have content
         if response.status_code == 204 or not response.content:
@@ -135,9 +146,7 @@ class OneDriveClient:
             File content as bytes
         """
         endpoint = f"/me/drive/items/{item_id}/content"
-        url = f"{self.api_base_url}{endpoint}"
-        response = requests.get(url, headers=self.headers)
-        response.raise_for_status()
+        response = self._make_request("GET", endpoint, return_json=False)
         return response.content
     
     def upload_file(
@@ -157,13 +166,13 @@ class OneDriveClient:
             Dictionary containing information about the uploaded file
         """
         endpoint = f"/me/drive/root:/{file_path}:/content"
-        headers = self.headers.copy()
-        headers["Content-Type"] = "application/octet-stream"
-        
-        url = f"{self.api_base_url}{endpoint}"
-        response = requests.put(url, headers=headers, data=content)
-        response.raise_for_status()
-        return response.json()
+        custom_headers = {"Content-Type": "application/octet-stream"}
+        return self._make_request(
+            "PUT", 
+            endpoint, 
+            custom_headers=custom_headers,
+            data=content
+        )
     
     def create_folder(self, folder_name: str, parent_path: str = "") -> Dict[str, Any]:
         """Create a new folder in OneDrive.
