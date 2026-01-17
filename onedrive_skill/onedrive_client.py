@@ -1,7 +1,7 @@
 """OneDrive Client implementation using Microsoft Graph API."""
 
 import os
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Callable
 from urllib.parse import quote
 import requests
 
@@ -243,17 +243,79 @@ class OneDriveSkill:
     """Skill wrapper for OneDrive operations.
     
     This class provides a simplified interface for common OneDrive operations
-    that can be easily integrated with LLM systems.
+    that can be easily integrated with LLM systems. It includes safety features
+    such as user confirmation for destructive operations.
+    
+    Attributes:
+        client: OneDriveClient instance for API operations
+        confirmation_callback: Optional callback function for user confirmations
     """
     
-    def __init__(self, access_token: Optional[str] = None):
+    def __init__(
+        self, 
+        access_token: Optional[str] = None,
+        confirmation_callback: Optional[Callable[[str], bool]] = None
+    ):
         """Initialize OneDrive skill.
         
         Args:
             access_token: OAuth2 access token. If not provided, will attempt
                          to read from ONEDRIVE_ACCESS_TOKEN environment variable.
+            confirmation_callback: Optional function that takes a confirmation message
+                                  and returns True if user confirms, False otherwise.
+                                  If not provided, uses default console input.
         """
         self.client = OneDriveClient(access_token=access_token)
+        self.confirmation_callback = confirmation_callback or self._default_confirmation
+    
+    def _default_confirmation(self, message: str) -> bool:
+        """Default confirmation handler using console input.
+        
+        Args:
+            message: Confirmation message to display
+            
+        Returns:
+            True if user confirms, False otherwise
+        """
+        print(f"\n⚠️  CONFIRMATION REQUIRED ⚠️")
+        print(f"{message}")
+        response = input("Do you want to proceed? (yes/no): ").strip().lower()
+        return response in ['yes', 'y']
+    
+    def get_skill_metadata(self) -> Dict[str, Any]:
+        """Get skill metadata for LLM discovery.
+        
+        Returns:
+            Dictionary containing skill metadata including available operations,
+            parameters, safety levels, and descriptions.
+        """
+        import json
+        import os
+        
+        # Try to load from skill_manifest.json
+        manifest_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)), 
+            'skill_manifest.json'
+        )
+        
+        if os.path.exists(manifest_path):
+            with open(manifest_path, 'r') as f:
+                return json.load(f)
+        
+        # Fallback to inline metadata
+        return {
+            "name": "onedrive-connect",
+            "version": "0.1.0",
+            "description": "A skill for connecting to Microsoft OneDrive",
+            "skills": [
+                {"name": "list_files", "safety": "read-only"},
+                {"name": "search", "safety": "read-only"},
+                {"name": "get_file_content", "safety": "read-only"},
+                {"name": "upload_content", "safety": "write", "requires_confirmation": True},
+                {"name": "create_folder", "safety": "write"},
+                {"name": "delete_item", "safety": "destructive", "requires_confirmation": True}
+            ]
+        }
     
     def list_files(self, folder_path: str = "") -> str:
         """List files in a folder (skill-friendly output).
@@ -288,18 +350,35 @@ class OneDriveSkill:
         """
         return self.client.download_file(item_id)
     
-    def upload_content(self, file_path: str, content: bytes) -> str:
+    def upload_content(
+        self, 
+        file_path: str, 
+        content: bytes,
+        require_confirmation: bool = True
+    ) -> str:
         """Upload content to OneDrive.
+        
+        WARNING: This operation will overwrite any existing file at the specified path.
         
         Args:
             file_path: Path where to upload the file
             content: File content as bytes
+            require_confirmation: Whether to require user confirmation before uploading
         
         Returns:
-            Success message with file information
+            Success message with file information, or cancellation message
         """
+        if require_confirmation:
+            message = (
+                f"You are about to upload a file to: {file_path}\n"
+                f"File size: {len(content)} bytes\n"
+                f"WARNING: This will OVERWRITE any existing file at this path!"
+            )
+            if not self.confirmation_callback(message):
+                return f"❌ Upload cancelled by user for: {file_path}"
+        
         result = self.client.upload_file(file_path, content)
-        return f"File uploaded successfully: {result.get('name')} (ID: {result.get('id')})"
+        return f"✅ File uploaded successfully: {result.get('name')} (ID: {result.get('id')})"
     
     def search(self, query: str) -> str:
         """Search for items in OneDrive.
@@ -324,3 +403,64 @@ class OneDriveSkill:
             result.append(f"... and {len(items) - 10} more items")
         
         return "\n".join(result)
+    
+    def create_folder(
+        self, 
+        folder_name: str, 
+        parent_path: str = "",
+        conflict_behavior: str = "rename"
+    ) -> str:
+        """Create a new folder in OneDrive.
+        
+        Args:
+            folder_name: Name of the folder to create
+            parent_path: Path to parent folder (empty for root)
+            conflict_behavior: How to handle naming conflicts ("rename", "replace", or "fail")
+        
+        Returns:
+            Success message with folder information
+        """
+        result = self.client.create_folder(folder_name, parent_path, conflict_behavior)
+        location = f"in '{parent_path}'" if parent_path else "in root"
+        return f"✅ Folder created successfully: {result.get('name')} (ID: {result.get('id')}) {location}"
+    
+    def delete_item(
+        self, 
+        item_id: str,
+        item_name: Optional[str] = None,
+        require_confirmation: bool = True
+    ) -> str:
+        """Delete a file or folder from OneDrive.
+        
+        ⚠️ WARNING: This is a DESTRUCTIVE operation that permanently deletes the item.
+        
+        Args:
+            item_id: The ID of the item to delete
+            item_name: Optional name of the item for better confirmation message
+            require_confirmation: Whether to require user confirmation before deleting
+        
+        Returns:
+            Success message or cancellation message
+        """
+        if require_confirmation:
+            # If item_name not provided, try to get it
+            display_name = item_name
+            if not display_name:
+                try:
+                    item_info = self.client.get_item_info(item_id)
+                    display_name = item_info.get('name', 'Unknown item')
+                except Exception:
+                    display_name = f"item with ID {item_id}"
+            
+            message = (
+                f"⚠️  DESTRUCTIVE OPERATION ⚠️\n"
+                f"You are about to PERMANENTLY DELETE: {display_name}\n"
+                f"Item ID: {item_id}\n"
+                f"This action CANNOT be undone!"
+            )
+            if not self.confirmation_callback(message):
+                return f"❌ Deletion cancelled by user for: {display_name}"
+        
+        self.client.delete_item(item_id)
+        display_name = item_name or f"item {item_id}"
+        return f"✅ Item deleted successfully: {display_name}"

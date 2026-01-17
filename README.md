@@ -2,6 +2,8 @@
 
 A Python project to provide a skill (in the sense of the standard skills now available for LLMs) to connect to personal Microsoft OneDrive. Authentication tokens are injected via environment variables or secrets for security.
 
+**✨ Compliant with LLM Agent Skills Best Practices ✨**
+
 ## Features
 
 - 🔐 Secure authentication via environment variables
@@ -12,6 +14,19 @@ A Python project to provide a skill (in the sense of the standard skills now ava
 - 📂 Create and manage folders
 - 🗑️ Delete items
 - 🤖 LLM-friendly skill interface
+- ⚠️ **User confirmation for destructive operations**
+- 📋 **Skill metadata for LLM discovery**
+- 🛡️ **Safety mechanisms and cancellation support**
+
+## Safety Features
+
+This skill implements industry-standard safety features for LLM agent skills:
+
+- **User Confirmation Required**: Destructive operations (delete, overwrite) require explicit user confirmation
+- **Clear Warnings**: Operations that modify or delete data display clear warnings
+- **Cancellation Support**: Users can cancel any operation before execution
+- **Skill Metadata**: Provides structured metadata for LLM discovery and capability assessment
+- **Safe Defaults**: Operations default to safe behaviors (e.g., rename on conflict)
 
 ## Installation
 
@@ -141,6 +156,10 @@ from onedrive_skill import OneDriveSkill
 # Initialize skill
 skill = OneDriveSkill()
 
+# Get skill metadata (useful for LLM discovery)
+metadata = skill.get_skill_metadata()
+print(f"Skill: {metadata['name']} v{metadata['version']}")
+
 # List files (returns formatted string)
 print(skill.list_files())
 # Output:
@@ -156,11 +175,44 @@ print(skill.search("budget"))
 # - [File] budget_proposal.docx (ID: DEF456)
 # - [Folder] Budget Archive (ID: GHI789)
 
-# Upload content
+# Upload content (with confirmation)
 content = b"Hello, OneDrive!"
 result = skill.upload_content("test.txt", content)
+# User will be prompted:
+# ⚠️  CONFIRMATION REQUIRED ⚠️
+# You are about to upload a file to: test.txt
+# File size: 17 bytes
+# WARNING: This will OVERWRITE any existing file at this path!
+# Do you want to proceed? (yes/no):
 print(result)
-# Output: File uploaded successfully: test.txt (ID: XYZ999)
+# Output: ✅ File uploaded successfully: test.txt (ID: XYZ999)
+
+# Delete item (with confirmation - DESTRUCTIVE)
+result = skill.delete_item("ABC123", "budget_2024.xlsx")
+# User will be prompted:
+# ⚠️  DESTRUCTIVE OPERATION ⚠️
+# You are about to PERMANENTLY DELETE: budget_2024.xlsx
+# Item ID: ABC123
+# This action CANNOT be undone!
+# Do you want to proceed? (yes/no):
+print(result)
+# If cancelled: ❌ Deletion cancelled by user for: budget_2024.xlsx
+# If confirmed: ✅ Item deleted successfully: budget_2024.xlsx
+```
+
+### Using Custom Confirmation Handler
+
+For integration with LLM systems or custom UI, provide your own confirmation handler:
+
+```python
+def custom_confirmation(message: str) -> bool:
+    """Custom handler that integrates with your UI/LLM system."""
+    # Display message in your UI
+    # Get user's response through your preferred method
+    # Return True to proceed, False to cancel
+    return get_user_response(message)
+
+skill = OneDriveSkill(confirmation_callback=custom_confirmation)
 ```
 
 ### Running the Example
@@ -192,13 +244,24 @@ Main client for interacting with OneDrive via Microsoft Graph API.
 
 ### OneDriveSkill
 
-Simplified skill interface for LLM integration.
+Simplified skill interface for LLM integration with safety features.
+
+**Constructor:**
+- `OneDriveSkill(access_token, confirmation_callback)` - Initialize with optional custom confirmation handler
 
 **Methods:**
-- `list_files(folder_path)` - List files with formatted output
-- `get_file_content(item_id)` - Download file content
-- `upload_content(file_path, content)` - Upload file with status message
-- `search(query)` - Search with formatted results
+- `get_skill_metadata()` - Get skill metadata for LLM discovery
+- `list_files(folder_path)` - List files with formatted output (read-only)
+- `get_file_content(item_id)` - Download file content (read-only)
+- `upload_content(file_path, content, require_confirmation)` - Upload file with status message (requires confirmation by default)
+- `create_folder(folder_name, parent_path, conflict_behavior)` - Create folder with configurable conflict resolution
+- `delete_item(item_id, item_name, require_confirmation)` - Delete item (requires confirmation by default, DESTRUCTIVE)
+- `search(query)` - Search with formatted results (read-only)
+
+**Safety Levels:**
+- 🟢 **Read-only**: `list_files`, `get_file_content`, `search`
+- 🟡 **Write**: `create_folder`
+- 🔴 **Destructive** (requires confirmation): `upload_content` (overwrites), `delete_item`
 
 ## Security Considerations
 
