@@ -2,6 +2,7 @@
 
 import os
 from typing import Dict, List, Optional, Any
+from urllib.parse import quote
 import requests
 
 
@@ -121,7 +122,9 @@ class OneDriveClient:
         if not folder_path:
             return self.list_root_items()
         
-        endpoint = f"/me/drive/root:/{folder_path}:/children"
+        # URL-encode the folder path to prevent injection
+        encoded_path = quote(folder_path, safe='')
+        endpoint = f"/me/drive/root:/{encoded_path}:/children"
         response = self._make_request("GET", endpoint)
         return response.get("value", [])
     
@@ -165,7 +168,9 @@ class OneDriveClient:
         Returns:
             Dictionary containing information about the uploaded file
         """
-        endpoint = f"/me/drive/root:/{file_path}:/content"
+        # URL-encode the file path to prevent injection
+        encoded_path = quote(file_path, safe='')
+        endpoint = f"/me/drive/root:/{encoded_path}:/content"
         custom_headers = {"Content-Type": "application/octet-stream"}
         return self._make_request(
             "PUT", 
@@ -185,7 +190,9 @@ class OneDriveClient:
             Dictionary containing information about the created folder
         """
         if parent_path:
-            endpoint = f"/me/drive/root:/{parent_path}:/children"
+            # URL-encode the parent path to prevent injection
+            encoded_path = quote(parent_path, safe='')
+            endpoint = f"/me/drive/root:/{encoded_path}:/children"
         else:
             endpoint = "/me/drive/root/children"
         
@@ -214,7 +221,9 @@ class OneDriveClient:
         Returns:
             List of items matching the search query
         """
-        endpoint = f"/me/drive/root/search(q='{query}')"
+        # URL-encode the query to prevent injection
+        encoded_query = quote(query, safe='')
+        endpoint = f"/me/drive/root/search(q='{encoded_query}')"
         response = self._make_request("GET", endpoint)
         return response.get("value", [])
 
