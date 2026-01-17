@@ -12,6 +12,8 @@ A Python project to provide a skill (in the sense of the standard skills now ava
 - 📖 [API Reference](#api-reference) - Complete method documentation
 - 💡 [Usage Examples](#usage) - Code samples and demos
 - 🛡️ [Safety Features](#safety-features) - Security and confirmations
+- 📄 [Skill Specification](SKILL.md) - Complete skill documentation
+- 📝 [Changelog](CHANGELOG.md) - Version history and release notes
 
 ## LLM Skills Compliance
 
@@ -422,3 +424,13 @@ Check that your application has the necessary API permissions in Azure AD and th
 - [Microsoft Graph API Documentation](https://docs.microsoft.com/en-us/graph/)
 - [OneDrive API Reference](https://docs.microsoft.com/en-us/graph/api/resources/onedrive)
 - [Azure AD App Registration](https://docs.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app)
+
+## Documentation
+
+This project includes comprehensive documentation:
+
+- **[README.md](README.md)** - Main documentation with quick start and usage
+- **[SKILL.md](SKILL.md)** - Complete skill specification and API reference
+- **[REQUIREMENTS.md](REQUIREMENTS.md)** - Dependencies and system requirements
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+- **[skill_manifest.json](skill_manifest.json)** - Machine-readable skill metadata
