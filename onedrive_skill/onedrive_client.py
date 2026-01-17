@@ -122,8 +122,8 @@ class OneDriveClient:
         if not folder_path:
             return self.list_root_items()
         
-        # URL-encode the folder path to prevent injection
-        encoded_path = quote(folder_path, safe='')
+        # URL-encode the folder path, preserving forward slashes for path separators
+        encoded_path = quote(folder_path, safe='/')
         endpoint = f"/me/drive/root:/{encoded_path}:/children"
         response = self._make_request("GET", endpoint)
         return response.get("value", [])
@@ -168,8 +168,8 @@ class OneDriveClient:
         Returns:
             Dictionary containing information about the uploaded file
         """
-        # URL-encode the file path to prevent injection
-        encoded_path = quote(file_path, safe='')
+        # URL-encode the file path, preserving forward slashes for path separators
+        encoded_path = quote(file_path, safe='/')
         endpoint = f"/me/drive/root:/{encoded_path}:/content"
         custom_headers = {"Content-Type": "application/octet-stream"}
         return self._make_request(
@@ -190,8 +190,8 @@ class OneDriveClient:
             Dictionary containing information about the created folder
         """
         if parent_path:
-            # URL-encode the parent path to prevent injection
-            encoded_path = quote(parent_path, safe='')
+            # URL-encode the parent path, preserving forward slashes for path separators
+            encoded_path = quote(parent_path, safe='/')
             endpoint = f"/me/drive/root:/{encoded_path}:/children"
         else:
             endpoint = "/me/drive/root/children"
@@ -221,8 +221,9 @@ class OneDriveClient:
         Returns:
             List of items matching the search query
         """
-        # URL-encode the query to prevent injection
-        encoded_query = quote(query, safe='')
+        # URL-encode the query, preserving spaces for search functionality
+        # Note: Microsoft Graph API handles spaces in search queries
+        encoded_query = quote(query, safe=' ')
         endpoint = f"/me/drive/root/search(q='{encoded_query}')"
         response = self._make_request("GET", endpoint)
         return response.get("value", [])
