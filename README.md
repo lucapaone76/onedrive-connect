@@ -83,11 +83,13 @@ This skill implements industry-standard safety features for LLM agent skills:
    python -c "from onedrive_skill import OneDriveSkill; print('Installation successful!')"
    ```
 
-### Method 2: Install from PyPI (after publishing)
+### Method 2: Install from PyPI
 
 ```bash
 pip install onedrive-skill
 ```
+
+**Package is now available on PyPI:** https://pypi.org/project/onedrive-skill/
 
 ### Method 3: Install with development dependencies
 
