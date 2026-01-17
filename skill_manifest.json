@@ -1,0 +1,156 @@
+{
+  "name": "onedrive-connect",
+  "version": "0.1.0",
+  "description": "A skill for connecting to Microsoft OneDrive and performing file operations",
+  "author": "lucapaone76",
+  "license": "MIT",
+  "skills": [
+    {
+      "name": "list_files",
+      "description": "List files and folders in a OneDrive directory",
+      "parameters": {
+        "folder_path": {
+          "type": "string",
+          "description": "Path to the folder to list (empty for root)",
+          "required": false,
+          "default": ""
+        }
+      },
+      "returns": {
+        "type": "string",
+        "description": "Formatted list of files and folders"
+      },
+      "safety": "read-only"
+    },
+    {
+      "name": "search",
+      "description": "Search for files in OneDrive",
+      "parameters": {
+        "query": {
+          "type": "string",
+          "description": "Search query string",
+          "required": true
+        }
+      },
+      "returns": {
+        "type": "string",
+        "description": "Formatted search results"
+      },
+      "safety": "read-only"
+    },
+    {
+      "name": "get_file_content",
+      "description": "Download and retrieve file content from OneDrive",
+      "parameters": {
+        "item_id": {
+          "type": "string",
+          "description": "The ID of the file to download",
+          "required": true
+        }
+      },
+      "returns": {
+        "type": "bytes",
+        "description": "File content as bytes"
+      },
+      "safety": "read-only"
+    },
+    {
+      "name": "upload_content",
+      "description": "Upload content to OneDrive (overwrites existing files)",
+      "parameters": {
+        "file_path": {
+          "type": "string",
+          "description": "Path where to upload the file",
+          "required": true
+        },
+        "content": {
+          "type": "bytes",
+          "description": "File content as bytes",
+          "required": true
+        },
+        "require_confirmation": {
+          "type": "boolean",
+          "description": "Whether to require user confirmation before uploading",
+          "required": false,
+          "default": true
+        }
+      },
+      "returns": {
+        "type": "string",
+        "description": "Success message with file information"
+      },
+      "safety": "write",
+      "requires_confirmation": true,
+      "warning": "This operation will overwrite any existing file at the specified path"
+    },
+    {
+      "name": "create_folder",
+      "description": "Create a new folder in OneDrive",
+      "parameters": {
+        "folder_name": {
+          "type": "string",
+          "description": "Name of the folder to create",
+          "required": true
+        },
+        "parent_path": {
+          "type": "string",
+          "description": "Path to parent folder (empty for root)",
+          "required": false,
+          "default": ""
+        },
+        "conflict_behavior": {
+          "type": "string",
+          "description": "How to handle naming conflicts",
+          "enum": ["rename", "replace", "fail"],
+          "required": false,
+          "default": "rename"
+        }
+      },
+      "returns": {
+        "type": "string",
+        "description": "Success message with folder information"
+      },
+      "safety": "write"
+    },
+    {
+      "name": "delete_item",
+      "description": "Delete a file or folder from OneDrive (DESTRUCTIVE)",
+      "parameters": {
+        "item_id": {
+          "type": "string",
+          "description": "The ID of the item to delete",
+          "required": true
+        },
+        "item_name": {
+          "type": "string",
+          "description": "Name of the item for confirmation",
+          "required": false
+        },
+        "require_confirmation": {
+          "type": "boolean",
+          "description": "Whether to require user confirmation before deleting",
+          "required": false,
+          "default": true
+        }
+      },
+      "returns": {
+        "type": "string",
+        "description": "Success or cancellation message"
+      },
+      "safety": "destructive",
+      "requires_confirmation": true,
+      "warning": "This operation permanently deletes the item and cannot be undone"
+    }
+  ],
+  "authentication": {
+    "type": "oauth2",
+    "provider": "microsoft_graph",
+    "environment_variable": "ONEDRIVE_ACCESS_TOKEN",
+    "scopes": ["Files.ReadWrite", "User.Read"]
+  },
+  "safety_features": {
+    "confirmation_required_for_destructive_operations": true,
+    "url_encoding_for_user_inputs": true,
+    "secure_token_handling": true
+  }
+}
