@@ -4,6 +4,28 @@ A Python project to provide a skill (in the sense of the standard skills now ava
 
 **✨ Compliant with LLM Agent Skills Best Practices ✨**
 
+## Quick Links
+
+- 📋 [Installation Guide](#installation) - Detailed setup instructions
+- 📦 [Requirements](REQUIREMENTS.md) - Dependencies and system requirements
+- 🔐 [Authentication Setup](#authentication-setup) - Azure AD configuration
+- 📖 [API Reference](#api-reference) - Complete method documentation
+- 💡 [Usage Examples](#usage) - Code samples and demos
+- 🛡️ [Safety Features](#safety-features) - Security and confirmations
+
+## LLM Skills Compliance
+
+This skill follows best practices for LLM agent skills:
+
+- **Structured Metadata**: Provides `skill_manifest.json` with detailed capability descriptions
+- **Safety Levels**: Clear categorization (read-only, write, destructive)
+- **User Consent**: Required confirmations for destructive operations
+- **Discoverable**: Implements `get_skill_metadata()` for runtime introspection
+- **Type-Safe**: Full type hints for all public APIs
+- **Well-Documented**: Comprehensive docstrings and usage examples
+
+For more on LLM agent skills standards, see the [skill manifest](skill_manifest.json).
+
 ## Features
 
 - 🔐 Secure authentication via environment variables
@@ -30,19 +52,95 @@ This skill implements industry-standard safety features for LLM agent skills:
 
 ## Installation
 
-### From source
+### Prerequisites
 
-```bash
-git clone https://github.com/lucapaone76/onedrive-connect.git
-cd onedrive-connect
-pip install -r requirements.txt
-```
+- Python 3.8 or higher
+- pip (Python package installer)
+- An Azure AD application with Microsoft Graph API permissions (see [Authentication Setup](#authentication-setup))
 
-### Using pip (after publishing)
+### Method 1: Install from source (Recommended for development)
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/lucapaone76/onedrive-connect.git
+   cd onedrive-connect
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Install the package in development mode (optional):**
+   ```bash
+   pip install -e .
+   ```
+
+4. **Verify installation:**
+   ```bash
+   python -c "from onedrive_skill import OneDriveSkill; print('Installation successful!')"
+   ```
+
+### Method 2: Install from PyPI (after publishing)
 
 ```bash
 pip install onedrive-skill
 ```
+
+### Method 3: Install with development dependencies
+
+For contributing or running tests:
+
+```bash
+git clone https://github.com/lucapaone76/onedrive-connect.git
+cd onedrive-connect
+pip install -e ".[dev]"
+```
+
+This installs the package along with development tools (pytest, black, ruff).
+
+### Virtual Environment (Recommended)
+
+It's recommended to use a virtual environment to avoid dependency conflicts:
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On Linux/Mac:
+source venv/bin/activate
+# On Windows:
+venv\Scripts\activate
+
+# Install the package
+pip install -r requirements.txt
+```
+
+### Docker Installation (Alternative)
+
+If you prefer using Docker:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+ENV ONEDRIVE_ACCESS_TOKEN=""
+
+CMD ["python", "example_usage.py"]
+```
+
+Build and run:
+```bash
+docker build -t onedrive-skill .
+docker run -e ONEDRIVE_ACCESS_TOKEN="your_token" onedrive-skill
+```
+
+For detailed requirements and dependencies, see [REQUIREMENTS.md](REQUIREMENTS.md).
 
 ## Authentication Setup
 
