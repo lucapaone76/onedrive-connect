@@ -3,7 +3,7 @@
 ## Skill Information
 
 **Name**: onedrive-connect
-**Version**: 0.1.0
+**Version**: 0.1.1
 **Author**: lucapaone76
 **License**: MIT
 **Category**: File Management, Cloud Storage

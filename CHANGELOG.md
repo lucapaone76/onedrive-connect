@@ -5,6 +5,67 @@ All notable changes to the OneDrive Connect skill will be documented in this fil
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-01-17
+
+### Added
+
+#### Authentication
+- **`auth_helper.py`** - Interactive authentication script for easy token generation
+  - Guides users through Azure AD app registration
+  - Opens browser for Microsoft OAuth2 authentication
+  - Automatically generates access and refresh tokens
+  - Saves tokens to `.env` file with user confirmation
+  - Includes comprehensive setup instructions and security reminders
+- **Package extras for authentication**: `pip install onedrive-skill[auth]`
+  - Includes `msal>=1.20.0` for Microsoft Authentication Library
+  - Includes `python-dotenv>=1.0.0` for .env file support
+- **`requirements-auth.txt`** - Standalone authentication dependencies file
+- Token refresh documentation and examples in README and SKILL.md
+
+#### Documentation
+- **Comprehensive Claude integration guide** in README.md
+  - Step-by-step setup for Claude.ai and Claude Code CLI
+  - Example prompts for natural language usage
+  - Security considerations for Claude usage
+  - Quick start guide (3 steps to get started)
+- **Detailed Azure AD authentication setup** for personal Microsoft accounts
+  - Screenshot-level detail for Azure Portal navigation
+  - Step-by-step app registration instructions
+  - API permissions configuration guide
+  - Two authentication methods (helper script and manual)
+- **Enhanced SKILL.md** with authentication section
+  - Quick reference section with PyPI link
+  - "Using with Claude and LLM Systems" section
+  - Comprehensive configuration methods
+  - Token management and refresh documentation
+  - All environment variables documented
+- **Enhanced `.env.example`** template
+  - Added `ONEDRIVE_REFRESH_TOKEN` variable
+  - Added `AZURE_CLIENT_ID` variable
+  - Comprehensive comments for all variables
+  - Usage instructions included
+
+#### Installation
+- **Published to PyPI**: https://pypi.org/project/onedrive-skill/
+  - Package available via `pip install onedrive-skill`
+  - Multiple installation options (core, auth, dev)
+- **Installation extras** in setup.cfg
+  - `[auth]` extra for authentication tools
+  - `[dev]` extra for development tools
+
+### Changed
+- Updated README.md with PyPI installation as Method 2
+- Enhanced authentication setup instructions with more detail
+- Improved documentation structure with better navigation
+- Updated SKILL.md changelog with detailed feature breakdown
+
+### Documentation Improvements
+- Added platform-specific environment variable setup (Linux/Mac/Windows)
+- Multiple configuration methods documented (.env, environment variables, direct)
+- Token expiration and refresh token usage explained
+- Security best practices for token handling
+- Example Claude prompts and use cases
+
 ## [0.1.0] - 2026-01-17
 
 ### Added
@@ -141,6 +202,7 @@ See [README.md](README.md) for installation instructions and [SKILL.md](SKILL.md
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 0.1.1 | 2026-01-17 | Added authentication helper, PyPI publishing, Claude integration guide |
 | 0.1.0 | 2026-01-17 | Initial release with core functionality |
 
 ---
